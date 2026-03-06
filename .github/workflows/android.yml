@@ -12,9 +12,19 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool libtool-bin pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev python3-dev python3-setuptools build-essential libtinfo6 gettext m4
-          # Это «хакерский» фикс для Ubuntu 24.04: принудительно обновляем макросы
-          sudo apt install --reinstall libtool
+          
+          # ХАКЕРСКИЙ ФИКС №1: Принудительно линкуем макросы в общую папку
+          sudo cp /usr/share/aclocal/libtool.m4 /usr/share/autoconf/autoconf/ || true
+          sudo cp /usr/share/aclocal/ltoptions.m4 /usr/share/autoconf/autoconf/ || true
+          sudo cp /usr/share/aclocal/ltsugar.m4 /usr/share/autoconf/autoconf/ || true
+          sudo cp /usr/share/aclocal/ltversion.m4 /usr/share/autoconf/autoconf/ || true
+          sudo cp /usr/share/aclocal/lt~obsolete.m4 /usr/share/autoconf/autoconf/ || true
+          
+          # ХАКЕРСКИЙ ФИКС №2: Обновляем aclocal
+          sudo aclocal --force || true
+          
           pip3 install --user --upgrade buildozer cython
+
 
 
 
