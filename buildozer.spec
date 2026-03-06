@@ -1,5 +1,5 @@
 [app]
-title = Мои Заметки
+title = Заметки
 package.name = mynotes
 package.domain = org.test
 source.dir = .
