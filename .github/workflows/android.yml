@@ -17,15 +17,20 @@ jobs:
 
       - name: Build with Buildozer
         run: |
+          # 1. Добавляем путь к локальным бинарникам (где лежит сам buildozer)
           export PATH=$PATH:$HOME/.local/bin
-          # 1. Указываем путь к SDK (он там создается по умолчанию)
-          export ANDROID_SDK_HOME=$HOME/.buildozer/android/platform/android-sdk
           
-          # 2. Принудительно устанавливаем build-tools, где лежит aidl
-          # Мы используем версию 34.0.0 (актуальная для r25b)
-          yes | $ANDROID_SDK_HOME/tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_HOME "build-tools;34.0.0" "platforms;android-34"
+          # 2. Запускаем "холостой" прогон, чтобы buildozer сам скачал SDK
+          # Мы прервем его, если он зависнет, но он успеет создать папки
+          yes | buildozer android p4a -- help || true
           
-          # 3. Запускаем сборку
+          # 3. Теперь, когда SDK скачан, принудительно ставим build-tools
+          export SDK_PATH=$HOME/.buildozer/android/platform/android-sdk
+          if [ -d "$SDK_PATH" ]; then
+            yes | $SDK_PATH/tools/bin/sdkmanager --sdk_root=$SDK_PATH "build-tools;34.0.0"
+          fi
+          
+          # 4. Основная сборка
           yes | buildozer -v android debug
 
       - name: Upload APK
