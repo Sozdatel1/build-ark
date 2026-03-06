@@ -11,7 +11,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev python3-dev python3-setuptools build-essential libtinfo6
+          sudo apt install -y git zip unzip autoconf libtool libtool-bin pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev python3-dev python3-setuptools build-essential libtinfo6 gettext
           pip3 install --user --upgrade buildozer cython
 
 
