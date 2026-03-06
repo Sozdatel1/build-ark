@@ -1,16 +1,21 @@
 name: Android Build
 on: [push, pull_request]
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Указываем конкретную версию системы
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4  # Обновили до v4
+
       - name: Build with Buildozer
-        uses: ArtemSerebrennikov/buildozer-action@v1
+        # Используем официальный экшен от создателей Kivy
+        uses: Title-0/buildozer-action@v1
         with:
-          python-version: 3.10
+          python-version: 3.11
+          buildozer_version: master
+
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4  # Обновили до v4 (критично!)
         with:
-          name: package
+          name: my-notes-app
           path: bin/*.apk
