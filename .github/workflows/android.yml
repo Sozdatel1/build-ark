@@ -21,8 +21,8 @@ jobs:
           sudo cp /usr/share/aclocal/ltversion.m4 /usr/share/autoconf/autoconf/ || true
           sudo cp /usr/share/aclocal/lt~obsolete.m4 /usr/share/autoconf/autoconf/ || true
           
-          # ХАКЕРСКИЙ ФИКС №2: Обновляем aclocal
-          sudo aclocal --force || true
+          # Фикс путей для aclocal (чтобы он видел libtool)
+          sudo ln -s /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltversion.m4 || true
           
           pip3 install --user --upgrade buildozer cython
 
