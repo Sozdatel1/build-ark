@@ -24,7 +24,7 @@ jobs:
           # Фикс путей для aclocal (чтобы он видел libtool)
           sudo ln -s /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltversion.m4 || true
           
-          pip3 install --user --upgrade buildozer cython
+          pip3 install --user --upgrade buildozer "Cython<3.0"
 
 
 
