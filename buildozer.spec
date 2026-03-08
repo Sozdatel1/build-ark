@@ -4,7 +4,7 @@ package.name = mynotes
 package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 0.2
+version = 0.5
 
 # СЮДА ПИШЕМ НАЗВАНИЕ ВАШЕЙ ИКОНКИ
 icon.filename = icon.png
