@@ -13,6 +13,23 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Cache Buildozer JSON
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Cache Android SDK/NDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-android-platform-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-android-platform-
+    
       - name: Install Dependencies
         run: |
           sudo apt update
