@@ -4,7 +4,7 @@ package.name = mynotes
 package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 2.1.8
+version = 2.2.1
 
 # СЮДА ПИШЕМ НАЗВАНИЕ ВАШЕЙ ИКОНКИ
 icon.filename = icon.png
@@ -15,3 +15,7 @@ orientation = portrait
 fullscreen = 0
 android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
+android.keystore = my.keystore
+android.keystore_password = mypassword123
+android.keyalias = my_alias
+android.keyalias_password = mypassword123

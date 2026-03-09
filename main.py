@@ -60,6 +60,8 @@ from kivy.uix.screenmanager import (
     WipeTransition,
 )
 from kivy.uix.widget import Widget
+from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
+from kivy.uix.popup import Popup
 
 
 def resource_path(relative_path):
@@ -101,7 +103,7 @@ class MainScreen(Screen):
         self.header = Label(
             text="ЗАМЕТКИ",
             size_hint_y=None,
-            height=60,
+            height=90,
             font_size="20sp",
             bold=True,
             color=(1, 1, 1, 1),  # Белый текст
@@ -328,13 +330,6 @@ class MainScreen(Screen):
                 f.write(text + "\n")
             self.input.text = ""
 
-    def delete_note(self, row_widget, text_to_remove):
-
-        self.notes_list.remove_widget(row_widget)
-        Clock.schedule_once(
-            lambda dt: self._slow_delete_from_file(text_to_remove), 0.05
-        )
-
     def _slow_delete_from_file(self, text_to_remove):
         if os.path.exists(self.file_path):
             with open(self.file_path, "r", encoding="utf-8") as f:
@@ -348,7 +343,10 @@ class MainScreen(Screen):
         self.manager.transition.direction = "left"  # Красивый сдвиг влево
         self.manager.current = "settings"  # Имя, которое мы дали в build
 
-
+    def delete_note(self, row_widget, text_to_remove):
+        self.notes_list.remove_widget(row_widget)
+        # Твоя магия удаления из файла:
+        Clock.schedule_once(lambda dt: self._slow_delete_from_file(text_to_remove), 0.05)
 class NoteViewScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -360,7 +358,7 @@ class NoteViewScreen(Screen):
         # Привязываем фон к размеру (чтобы при повороте экрана всё закрашивалось)
         self.bind(pos=self.update_rect, size=self.update_rect)
         layout = BoxLayout(orientation="vertical", padding=0, spacing=20)
-        header = BoxLayout(size_hint_y=None, height=60)
+        header = BoxLayout(size_hint_y=None, height=90)
         with header.canvas.before:
             Color(0.2, 0.4, 0.8, 1)  # Тот же синий цвет
             self.header_bg = Rectangle(pos=header.pos, size=header.size)
@@ -368,29 +366,37 @@ class NoteViewScreen(Screen):
 
         # Стрелочка влево (Назад)
         back_btn = Button(
-            text="<", size_hint_x=None, width=60, background_color=(0, 0, 0, 0),  # Прозрачный фон кнопки
+            size_hint_x=None, width=60, background_color=(0, 0, 0, 0),  # Прозрачный фон кнопки
             color=(1, 1, 1, 1),         # ЧИСТО БЕЛЫЙ ЦВЕТ СТРЕЛКИ
-            font_size='30sp',   
+            # font_size='30sp',   
         )
+        # 1. Мы не рисуем сразу, а создаем инструкцию
+        with back_btn.canvas.before:
+            Color(1, 1, 1, 1) # Белый люкс
+            self.back_line = Line(width=2, cap='round', joint='round') # Пустая линия
+            
+        # 2. ПРИВЯЗЫВАЕМ обновление координат к кнопке ✅
+        back_btn.bind(pos=self.update_back_arrow, size=self.update_back_arrow)
+        
         back_btn.bind(on_press=self.go_back)
 
         # Заголовок (пустой или слово "Просмотр")
-        title_lbl = Label(text="ПРОСМОТР", bold=True, font_size="18sp")
+        title_lbl = Label(text="", bold=True, font_size="20sp", halign="center")
 
         # Кнопка удаления (Справа вверху)
         self.del_btn = Button(
-            text="Удалить", size_hint_x=None, width=60, background_color=(0, 0, 0, 0), )
+            text="Удалить", size_hint_x=None, width=100, background_color=(9, 0, 0, 0), color=(1, 0.2, 0.2, 1),  bold=True, )
         self.del_btn.bind(on_press=self.delete_note)
-
+        header.add_widget(Widget(size_hint_x=None, width=10)) 
         header.add_widget(back_btn)
         header.add_widget(title_lbl)
         header.add_widget(self.del_btn)
-        header.add_widget(Widget(size_hint_x=None, width=30)) 
+        header.add_widget(Widget(size_hint_x=None, width=50)) 
         # Сюда будет прилетать полный текст
         self.note_content = Label(
             text="", 
             font_size="18sp", 
-            color=(0, 0, 1, 1), 
+            color=(0, 1, 1, 1), 
             valign="top", 
             halign="left",
             size_hint_x=0.9,
@@ -424,17 +430,60 @@ class NoteViewScreen(Screen):
         self.header_bg.size = instance.size
 
     def delete_note(self, instance):
-        # Проверяем, что у нас есть сохраненная карточка (row)
+        # 1. Создаем "начинку" окна подтверждения
+        content = BoxLayout(orientation='vertical', padding=20, spacing=20)
+        content.add_widget(Label(text="Удалить эту заметку?", font_size='18sp'))
+        
+        btns = BoxLayout(size_hint_y=None, height=50, spacing=10)
+        
+        # Красная кнопка подтверждения
+        yes_btn = Button(text="УДАЛИТЬ", background_color=(1, 0.2, 0.2, 1), bold=True)
+        # Синяя кнопка отмены
+        no_btn = Button(text="ОТМЕНА", background_color=(0.2, 0.4, 0.8, 1), bold=True)
+        
+        btns.add_widget(yes_btn)
+        btns.add_widget(no_btn)
+        content.add_widget(btns)
+
+        # 2. Создаем и открываем само окно (Popup)
+        self.confirm_popup = Popup(
+            title="Внимание!",
+            content=content,
+            size_hint=(0.8, 0.4), # Занимает 80% ширины экрана
+            auto_dismiss=True
+        )
+        
+        # Привязываем кнопки к действиям
+        yes_btn.bind(on_release=self.real_delete) # Идем удалять ✅
+        no_btn.bind(on_release=self.confirm_popup.dismiss) # Просто закрываем ❌
+        
+        self.confirm_popup.open()
+
+    # 3. А вот теперь — РЕАЛЬНОЕ УДАЛЕНИЕ (только после согласия)
+    def real_delete(self, instance):
+        self.confirm_popup.dismiss() # Закрываем окно
         if hasattr(self, 'current_row') and self.current_row:
             main_s = self.manager.get_screen('main')
-            
-            # ВЫЗЫВАЕМ УДАЛЕНИЕ (передаем карточку и полный текст из Label)
             main_s.delete_note(self.current_row, self.note_content.text)
-            
-            # Возвращаемся в список
-            self.go_back(None)
+            self.go_back(None) # Возвращаемся в список
 
-
+    def update_back_arrow(self, instance, value):
+        # 1. Стираем только старую графику ЭТОГО виджета
+        instance.canvas.after.clear() 
+        
+        with instance.canvas.after:
+            Color(1, 1, 1, 1) # Белый люкс
+            # 2. Рисуем "галочку" (с небольшим сдвигом влево для баланса)
+            Line(
+                points=[
+                    instance.center_x + 6, instance.center_y + 12, # Верх
+                    instance.center_x - 6, instance.center_y,      # Острый угол
+                    instance.center_x + 6, instance.center_y - 12  # Низ
+                ], 
+                width=2.0, 
+                cap='round', 
+                joint='round'
+            )
 class NotesApp(App):
     # def build(self):
     def build(self):
