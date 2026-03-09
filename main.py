@@ -51,6 +51,14 @@ from kivy.clock import Clock
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.graphics import Color, RoundedRectangle
 from kivy.graphics import Color, RoundedRectangle
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import (
+    NoTransition,
+    SlideTransition,
+    CardTransition,
+    FadeTransition,
+    WipeTransition,
+)
 
 
 def resource_path(relative_path):
@@ -68,11 +76,16 @@ else:
     basedir = os.path.dirname(os.path.abspath(__file__))
 
 
-class NotesApp(App):
-    def build(self):
-        self.icon = resource_path("icon.png")
-        self.file_path = os.path.join(self.user_data_dir, "notes.txt")
-        self.title = "Заметки"
+class MainScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # 1. Настройка путей (теперь через App.get_running_app())
+        app = App.get_running_app()
+        # self.file_path = os.path.join(app.user_data_dir, "notes.txt")
+        self.file_path = os.path.join(app.user_data_dir, "notes.txt")
+        # 2. Весь твой дизайн (Layout, Кнопки, Поля)
+
         # Главный фон приложения (темно-серый для контраста)
 
         self.main_layout = BoxLayout(orientation="vertical", padding=0, spacing=15)
@@ -94,13 +107,14 @@ class NotesApp(App):
             halign="center",
             valign="middle",
         )
+        # 3. Кнопка настроек
+
         # Делаем фон для заголовка (например, синий или темно-серый)
         with self.header.canvas.before:
             Color(0.2, 0.4, 0.8, 1)  # Цвет панели
             self.header_bg = Rectangle(pos=self.header.pos, size=self.header.size)
         self.header.bind(pos=self.update_header_bg, size=self.update_header_bg)
         self.main_layout.add_widget(self.header)
-
         # Привязываем обновление фона заголовка
 
         # 3. Привязываем обновление фона к изменению размера окна
@@ -140,9 +154,10 @@ class NotesApp(App):
         add_btn.bind(on_press=self.add_note)
         self.main_layout.add_widget(add_btn)
         add_btn.bind(
-            pos=self.update_button_bg, 
+            pos=self.update_button_bg,
             size=self.update_button_bg,
-            state=self.update_button_bg)
+            state=self.update_button_bg,
+        )
         self.notes_list = BoxLayout(
             orientation="vertical", size_hint_y=None, spacing=10
         )
@@ -152,49 +167,9 @@ class NotesApp(App):
         scroll.add_widget(self.notes_list)
         self.main_layout.add_widget(scroll)
 
+        # ВАЖНО: Добавляем весь лейаут на экран
+        self.add_widget(self.main_layout)
         self.load_notes()
-        return self.main_layout
-
-    def update_rect(self, instance, *args):
-        # Обновляем белый фон при изменении размера или позиции заметки
-        instance.canvas.before.clear()
-        with instance.canvas.before:
-            Color(1, 1, 1, 1)  # Белый цвет фона
-            # Rectangle(pos=instance.pos, size=instance.size)
-            RoundedRectangle(
-                pos=instance.pos,
-                size=instance.size,
-                radius=[
-                    10,
-                ],
-            )
-
-    def update_input_rect(self, instance, *args):
-        instance.canvas.before.clear()
-        with instance.canvas.before:
-            Color(0.95, 0.95, 0.95, 1)  # Светло-серый фон поля
-            RoundedRectangle(
-                pos=instance.pos,
-                size=instance.size,
-                radius=[
-                    15,
-                ],
-            )
-
-    def update_button_bg(self, instance, *args):
-        instance.canvas.before.clear()
-        with instance.canvas.before:
-            if instance.state == 'down':
-                Color(0.1, 0.4, 0.8, 1)  # Темно-синий (эффект нажатия)
-            else:
-                Color(0.2, 0.6, 1, 1)  # Твой стандартный голубой
-            RoundedRectangle(
-                pos=instance.pos,
-                size=instance.size,
-                radius=[
-                    15,
-                ],  # Скругление чуть больше, чем у заметок
-            )
 
     def display_note(self, text):
         # 1. Создаем общий контейнер для всей заметки
@@ -219,10 +194,10 @@ class NotesApp(App):
                 ],
             )
         row.bind(pos=self.update_rect, size=self.update_rect)
-
+        short_text = (text[:50] + "...") if len(text) > 50 else text
         # 3. Текст заметки (черный)
         lbl = Label(
-            text=text,
+            text=short_text,
             color=(0, 0, 0, 1),
             halign="left",
             valign="middle",
@@ -261,6 +236,21 @@ class NotesApp(App):
         row.add_widget(lbl)
         row.add_widget(btn_container)
 
+        def on_row_click(instance, touch):
+            if instance.collide_point(
+                *touch.pos
+            ):  # Проверяем, что нажали именно на карточку
+                app = App.get_running_app()
+                # 1. Находим экран просмотра (мы его создадим следующим шагом)
+                note_view = app.root.get_screen("note_view")
+                # 2. Передаем туда ВЕСЬ текст (не обрезанный!)
+                note_view.set_full_text(text, instance)
+
+                # 3. Летим на этот экран
+                app.root.transition.direction = "left"
+                app.root.current = "note_view"
+
+        row.bind(on_touch_down=on_row_click)
         self.notes_list.add_widget(row, index=len(self.notes_list.children))
 
     def update_btn_rect(self, instance, *args):
@@ -288,6 +278,47 @@ class NotesApp(App):
         self.rect_bg.pos = instance.pos
         self.rect_bg.size = instance.size
 
+    def update_rect(self, instance, *args):
+        # Обновляем белый фон при изменении размера или позиции заметки
+        instance.canvas.before.clear()
+        with instance.canvas.before:
+            Color(1, 1, 1, 1)  # Белый цвет фона
+            # Rectangle(pos=instance.pos, size=instance.size)
+            RoundedRectangle(
+                pos=instance.pos,
+                size=instance.size,
+                radius=[
+                    10,
+                ],
+            )
+
+    def update_input_rect(self, instance, *args):
+        instance.canvas.before.clear()
+        with instance.canvas.before:
+            Color(0.95, 0.95, 0.95, 1)  # Светло-серый фон поля
+            RoundedRectangle(
+                pos=instance.pos,
+                size=instance.size,
+                radius=[
+                    15,
+                ],
+            )
+
+    def update_button_bg(self, instance, *args):
+        instance.canvas.before.clear()
+        with instance.canvas.before:
+            if instance.state == "down":
+                Color(0.1, 0.4, 0.8, 1)  # Темно-синий (эффект нажатия)
+            else:
+                Color(0.2, 0.6, 1, 1)  # Твой стандартный голубой
+            RoundedRectangle(
+                pos=instance.pos,
+                size=instance.size,
+                radius=[
+                    15,
+                ],  # Скругление чуть больше, чем у заметок
+            )
+
     def add_note(self, instance):
         text = self.input.text.strip()
         if text:
@@ -311,6 +342,106 @@ class NotesApp(App):
                 for line in lines:
                     if line.strip() != text_to_remove.strip():
                         f.write(line)
+
+    def go_to_settings(self, instance):
+        self.manager.transition.direction = "left"  # Красивый сдвиг влево
+        self.manager.current = "settings"  # Имя, которое мы дали в build
+
+
+class NoteViewScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self.canvas.before:
+            Color(0.98, 0.98, 0.95, 1)  # Очень светлый кремовый (R, G, B, A)
+            self.rect = Rectangle(pos=self.pos, size=self.size)
+
+        # Привязываем фон к размеру (чтобы при повороте экрана всё закрашивалось)
+        self.bind(pos=self.update_rect, size=self.update_rect)
+        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
+        header = BoxLayout(size_hint_y=None, height=60)
+        with header.canvas.before:
+            Color(0.2, 0.4, 0.8, 1)  # Тот же синий цвет
+            self.header_bg = Rectangle(pos=header.pos, size=header.size)
+        header.bind(pos=self.update_header_bg, size=self.update_header_bg)
+
+        # Стрелочка влево (Назад)
+        back_btn = Button(
+            text="<", size_hint_x=None, width=60, background_color=(0, 0, 0, 0),  # Прозрачный фон кнопки
+            color=(1, 1, 1, 1),         # ЧИСТО БЕЛЫЙ ЦВЕТ СТРЕЛКИ
+            font_size='30sp',   
+        )
+        back_btn.bind(on_press=self.go_back)
+
+        # Заголовок (пустой или слово "Просмотр")
+        title_lbl = Label(text="ПРОСМОТР", bold=True, font_size="18sp")
+
+        # Кнопка удаления (Справа вверху)
+        self.del_btn = Button(
+            text="🗑️", size_hint_x=None, width=60, background_color=(0, 0, 0, 0)
+        )
+        self.del_btn.bind(on_press=self.delete_note)
+
+        header.add_widget(back_btn)
+        header.add_widget(title_lbl)
+        header.add_widget(self.del_btn)
+
+        # Сюда будет прилетать полный текст
+        self.note_content = Label(
+            text="", font_size="18sp", color=(0, 0, 1, 1), valign="top", halign="left"
+        )
+        self.note_content.bind(size=self.note_content.setter("text_size"))
+
+        # Кнопка НАЗАД
+        back_btn = Button(text="< НАЗАД", size_hint_y=None, height=80)
+        back_btn.bind(on_press=self.go_back)
+        layout.add_widget(header)       
+        layout.add_widget(self.note_content)
+        layout.add_widget(back_btn)
+        self.add_widget(layout)
+
+    def go_back(self, instance):
+        self.manager.transition.direction = "right"
+        self.manager.current = "main"
+
+    def set_full_text(self, text, row_widget):
+        # Мы берем текст и записываем его в наш Label
+        self.note_content.text = text
+        self.current_row = row_widget
+        # ДОБАВЬ ЭТОТ МЕТОД ВНУТРЬ КЛАССА NoteViewScreen
+
+    def update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+        # ДОБАВЬ ЭТО ВНУТРЬ NoteViewScreen:
+
+    def update_header_bg(self, instance, value):
+        self.header_bg.pos = instance.pos
+        self.header_bg.size = instance.size
+
+    def delete_note(self, instance):
+        # Проверяем, что у нас есть сохраненная карточка (row)
+        if hasattr(self, 'current_row') and self.current_row:
+            main_s = self.manager.get_screen('main')
+            
+            # ВЫЗЫВАЕМ УДАЛЕНИЕ (передаем карточку и полный текст из Label)
+            main_s.delete_note(self.current_row, self.note_content.text)
+            
+            # Возвращаемся в список
+            self.go_back(None)
+
+
+class NotesApp(App):
+    # def build(self):
+    def build(self):
+        self.icon = resource_path("icon.png")
+
+        self.title = "Заметки"
+        sm = ScreenManager(transition=FadeTransition(duration=0.1))
+        sm.add_widget(NoteViewScreen(name="note_view"))
+        sm.add_widget(MainScreen(name="main"))
+        sm.current = "main"
+        return sm
 
 
 if __name__ == "__main__":
