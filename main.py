@@ -59,6 +59,7 @@ from kivy.uix.screenmanager import (
     FadeTransition,
     WipeTransition,
 )
+from kivy.uix.widget import Widget
 
 
 def resource_path(relative_path):
@@ -201,7 +202,7 @@ class MainScreen(Screen):
             color=(0, 0, 0, 1),
             halign="left",
             valign="middle",
-            padding=(15, 15),
+            padding=(15, 30, 15, 30),
             font_size="16sp",
             size_hint=(1, None),  # Занимает всю ширину, высота по тексту
         )
@@ -219,18 +220,18 @@ class MainScreen(Screen):
             size_hint=(None, 1), width=70, padding=(5, 10), anchor_y="center"
         )
 
-        del_btn = Button(
-            text="X",
-            size_hint=(None, None),
-            size=(50, 50),  # ФИКСИРОВАННЫЙ РАЗМЕР
-            background_normal="",  # Убираем серый градиент Kivy
-            background_color=(0, 0, 0, 0),  # Красный
-            color=(1, 1, 1, 1),  # Белый крестик
-        )
-        del_btn.bind(pos=self.update_btn_rect, size=self.update_btn_rect)
-        del_btn.bind(on_press=lambda btn: self.delete_note(row, text))
+        # del_btn = Button(
+        #     text="X",
+        #     size_hint=(None, None),
+        #     size=(50, 50),  # ФИКСИРОВАННЫЙ РАЗМЕР
+        #     background_normal="",  # Убираем серый градиент Kivy
+        #     background_color=(0, 0, 0, 0),  # Красный
+        #     color=(1, 1, 1, 1),  # Белый крестик
+        # )
+        # del_btn.bind(pos=self.update_btn_rect, size=self.update_btn_rect)
+        # del_btn.bind(on_press=lambda btn: self.delete_note(row, text))
 
-        btn_container.add_widget(del_btn)
+        # btn_container.add_widget(del_btn)
 
         # Собираем всё вместе
         row.add_widget(lbl)
@@ -358,7 +359,7 @@ class NoteViewScreen(Screen):
 
         # Привязываем фон к размеру (чтобы при повороте экрана всё закрашивалось)
         self.bind(pos=self.update_rect, size=self.update_rect)
-        layout = BoxLayout(orientation="vertical", padding=20, spacing=20)
+        layout = BoxLayout(orientation="vertical", padding=0, spacing=20)
         header = BoxLayout(size_hint_y=None, height=60)
         with header.canvas.before:
             Color(0.2, 0.4, 0.8, 1)  # Тот же синий цвет
@@ -378,26 +379,29 @@ class NoteViewScreen(Screen):
 
         # Кнопка удаления (Справа вверху)
         self.del_btn = Button(
-            text="🗑️", size_hint_x=None, width=60, background_color=(0, 0, 0, 0)
-        )
+            text="Удалить", size_hint_x=None, width=60, background_color=(0, 0, 0, 0), )
         self.del_btn.bind(on_press=self.delete_note)
 
         header.add_widget(back_btn)
         header.add_widget(title_lbl)
         header.add_widget(self.del_btn)
-
+        header.add_widget(Widget(size_hint_x=None, width=30)) 
         # Сюда будет прилетать полный текст
         self.note_content = Label(
-            text="", font_size="18sp", color=(0, 0, 1, 1), valign="top", halign="left"
+            text="", 
+            font_size="18sp", 
+            color=(0, 0, 1, 1), 
+            valign="top", 
+            halign="left",
+            size_hint_x=0.9,
+            pos_hint={"center_x": 0.5}
         )
         self.note_content.bind(size=self.note_content.setter("text_size"))
 
-        # Кнопка НАЗАД
-        back_btn = Button(text="< НАЗАД", size_hint_y=None, height=80)
-        back_btn.bind(on_press=self.go_back)
+
         layout.add_widget(header)       
         layout.add_widget(self.note_content)
-        layout.add_widget(back_btn)
+    
         self.add_widget(layout)
 
     def go_back(self, instance):
