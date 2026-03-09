@@ -62,7 +62,7 @@ from kivy.uix.screenmanager import (
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line, Rectangle, RoundedRectangle
 from kivy.uix.popup import Popup
-
+from kivy.graphics import SmoothLine
 
 def resource_path(relative_path):
     """Получает абсолютный путь к ресурсам (нужно для PyInstaller --onefile)"""
@@ -103,7 +103,7 @@ class MainScreen(Screen):
         self.header = Label(
             text="ЗАМЕТКИ",
             size_hint_y=None,
-            height=90,
+            height=120,
             font_size="20sp",
             bold=True,
             color=(1, 1, 1, 1),  # Белый текст
@@ -358,7 +358,7 @@ class NoteViewScreen(Screen):
         # Привязываем фон к размеру (чтобы при повороте экрана всё закрашивалось)
         self.bind(pos=self.update_rect, size=self.update_rect)
         layout = BoxLayout(orientation="vertical", padding=0, spacing=20)
-        header = BoxLayout(size_hint_y=None, height=90)
+        header = BoxLayout(size_hint_y=None, height=120)
         with header.canvas.before:
             Color(0.2, 0.4, 0.8, 1)  # Тот же синий цвет
             self.header_bg = Rectangle(pos=header.pos, size=header.size)
@@ -387,7 +387,7 @@ class NoteViewScreen(Screen):
         self.del_btn = Button(
             text="Удалить", size_hint_x=None, width=100, background_color=(9, 0, 0, 0), color=(1, 0.2, 0.2, 1),  bold=True, )
         self.del_btn.bind(on_press=self.delete_note)
-        header.add_widget(Widget(size_hint_x=None, width=10)) 
+        header.add_widget(Widget(size_hint_x=None, width=40)) 
         header.add_widget(back_btn)
         header.add_widget(title_lbl)
         header.add_widget(self.del_btn)
@@ -474,13 +474,13 @@ class NoteViewScreen(Screen):
         with instance.canvas.after:
             Color(1, 1, 1, 1) # Белый люкс
             # 2. Рисуем "галочку" (с небольшим сдвигом влево для баланса)
-            Line(
+            SmoothLine(
                 points=[
-                    instance.center_x + 6, instance.center_y + 12, # Верх
-                    instance.center_x - 6, instance.center_y,      # Острый угол
-                    instance.center_x + 6, instance.center_y - 12  # Низ
+                    instance.center_x + 10, instance.center_y + 30,
+                    instance.center_x - 35, instance.center_y,
+                    instance.center_x + 10, instance.center_y - 30
                 ], 
-                width=2.0, 
+                width=2, # Уменьши ширину до 1.5 - 2, тонкие линии выглядят ДОРОЖЕ
                 cap='round', 
                 joint='round'
             )
